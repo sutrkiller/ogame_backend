@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace OGame.Api
 {
@@ -19,6 +13,12 @@ namespace OGame.Api
 
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, config) =>
+                {
+                    config.AddJsonFile("appsettings-security.json", false, true);
+                    config.AddJsonFile("appsettings-connections.json", false, true);
+                    config.AddJsonFile("appsettings-emails.json", false, true);
+                })
                 .UseStartup<Startup>()
                 .Build();
     }
