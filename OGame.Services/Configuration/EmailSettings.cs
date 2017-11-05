@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OGame.Services.Models
+﻿namespace OGame.Services.Configuration
 {
     public class EmailSettings
     {

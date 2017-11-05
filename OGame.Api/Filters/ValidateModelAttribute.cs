@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using OGame.Api.Models.NotificationModels;
 
 namespace OGame.Api.Filters
 {
@@ -11,7 +12,7 @@ namespace OGame.Api.Filters
 
             if (!context.ModelState.IsValid)
             {
-                context.Result = new BadRequestObjectResult(context.ModelState);
+                context.Result = ApiErrors.InvalidModel(context.ModelState);
             }
         }
     }

@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using MailKit.Net.Smtp;
 using MimeKit;
 using MimeKit.Text;
 using OGame.Services.Interfaces;
-using OGame.Services.Models;
 using Microsoft.Extensions.Options;
+using OGame.Services.Configuration;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace OGame.Services
 {
@@ -14,9 +16,12 @@ namespace OGame.Services
     public class EmailSender : IEmailSender
     {
         private readonly IOptions<EmailSettings> _emailSettings;
-        public EmailSender(IOptions<EmailSettings> emailSettings)
+        private readonly IOptions<ClientSettings> _clientSettings;
+
+        public EmailSender(IOptions<EmailSettings> emailSettings, IOptions<ClientSettings> clientSettings)
         {
-            _emailSettings = emailSettings;
+            _emailSettings = emailSettings ?? throw new ArgumentNullException(nameof(emailSettings));
+            _clientSettings = clientSettings ?? throw new ArgumentNullException(nameof(clientSettings));
         }
 
         public async Task SendEmailAsync(string email, string subject, string content)
@@ -43,6 +48,21 @@ namespace OGame.Services
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
             }
+        }
+
+        public async Task SendConfirmationEmailAsync(string email, Guid userId, string token)
+        {
+            //var query = new QueryHelpers.
+            var baseUrl = new Uri(_clientSettings.Value.BaseUrl);
+            var url = new Uri(baseUrl, _clientSettings.Value.ConfirmEmailEndpoint).ToString();
+            url = QueryHelpers.AddQueryString(url,
+                new Dictionary<string, string> {{"userId", userId.ToString()}, {"token", token}});
+
+            var subject = "Security confirmation of OGame account";
+            var message = $"<p>Hello!</p> <p>You just created new account with email address {email}.</p><p>If you created this account, confirm it for security reasons by clicking the following address: {url}.</p><p>Thank you.<br/>OGame team</p>";
+
+            //TODO: retry or do in a webjob
+            await SendEmailAsync(email, subject, message);
         }
     }
 }

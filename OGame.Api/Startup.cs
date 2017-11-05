@@ -12,8 +12,8 @@ using AutoMapper;
 using OGame.Auth.Contexts;
 using OGame.Auth.Models;
 using OGame.Services;
+using OGame.Services.Configuration;
 using OGame.Services.Interfaces;
-using OGame.Services.Models;
 
 namespace OGame.Api
 {
@@ -58,7 +58,6 @@ namespace OGame.Api
                 {
                     cfg.RequireHttpsMetadata = false;
                     cfg.SaveToken = true;
-
                     cfg.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidIssuer = Configuration["Tokens:Issuer"],
@@ -75,9 +74,12 @@ namespace OGame.Api
             services.AddAutoMapper(typeof(Startup));
 
             services.Configure<EmailSettings>(Configuration.GetSection("EmailSettings"));
+            services.Configure<ClientSettings>(Configuration.GetSection("Client"));
             services.AddSingleton<IIdGenerator, IdGenerator>();
             services.AddSingleton<IDateTimeService, DateTimeService>();
             services.AddTransient<IEmailSender, EmailSender>();
+
+            services.AddCors();
 
             services.AddMvc();
         }
@@ -89,6 +91,12 @@ namespace OGame.Api
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors(conf =>
+                conf.WithOrigins("http://localhost:8080")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+            );
 
             app.UseAuthentication();
 

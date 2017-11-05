@@ -15,12 +15,15 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using OGame.Api.Filters;
 using OGame.Api.Models.AccountViewModels;
+using OGame.Api.Models.NotificationModels;
+using OGame.Auth.Contexts;
 using OGame.Services.Interfaces;
 using OGame.Auth.Models;
 
 namespace OGame.Api.Controllers
 {
     [Authorize]
+    [Produces("application/json")]
     [Route("api/[controller]")]
     public class AccountController : Controller
     {
@@ -32,18 +35,22 @@ namespace OGame.Api.Controllers
         private readonly IEmailSender _emailSender;
         private readonly IMapper _mapper;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger, IConfiguration configuration, IIdGenerator idGenerator, IEmailSender emailSender, IMapper mapper)
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
+            ILogger<AccountController> logger, IConfiguration configuration, IIdGenerator idGenerator,
+            IEmailSender emailSender, IMapper mapper)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _logger = logger;
-            _configuration = configuration;
-            _idGenerator = idGenerator;
-            _emailSender = emailSender;
-            _mapper = mapper;
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
+            ;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ;
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            ;
+            _idGenerator = idGenerator ?? throw new ArgumentNullException(nameof(idGenerator));
+            _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        //TODO: write to client: Password must be at least 6 chars long and contain one non alpha numeric char and at least one numeric char
         [AllowAnonymous]
         [HttpPost("register")]
         [ValidateModel]
@@ -55,31 +62,39 @@ namespace OGame.Api.Controllers
                 Email = model.Email,
                 JoinDate = DateTime.UtcNow
             };
+
+            _logger.LogInformation($"Creating local account with email {model.Email}.");
             var result = await _userManager.CreateAsync(user, model.Password);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                _logger.LogInformation("New local user account created.");
+                _logger.LogWarning($"Creating of local account with email {model.Email} failed.");
 
-                //TODO: change baseUrl to client
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var baseUrl = new Uri(Request.GetUri().GetLeftPart(UriPartial.Authority));
-                var callbackUrl = new Uri(baseUrl, Url.Action("ConfirmEmail", new {userId = user.Id, token}));
-
-                await _emailSender.SendEmailAsync(model.Email, "Account confirmation",
-                    $@"Please confirm your account by going to this address: {callbackUrl}");
-
-                return Ok(result);
+                return GetRegisterError(result, ref model);
             }
-            _logger.LogWarning("Creating local user account failed.");
-            AddRegisterModelErrors(result);
-            return BadRequest(ModelState);
+
+            try
+            {
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                await _emailSender.SendConfirmationEmailAsync(model.Email, user.Id, token);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Unable to send a confirmation email to address {model.Email}");
+                //TODO: delay deleting in 30 days...
+                await _userManager.DeleteAsync(user);
+                return ApiErrors.UnreachableEmail(model.Email);
+            }
+
+            _logger.LogInformation($"New local user account with email {model.Email} created.");
+            //TOdo: change to created?
+            return Ok(result);
         }
 
         [HttpGet]
         [AllowAnonymous]
         [ValidateModel]
-        public async Task<IActionResult> ConfirmEmail(ConfirmEmailViewModel model)
+        public async Task<IActionResult> ConfirmEmail([FromQuery] ConfirmEmailViewModel model)
         {
             var user = await _userManager.FindByIdAsync(model.UserId.ToString());
             if (user == null)
@@ -90,7 +105,7 @@ namespace OGame.Api.Controllers
             var result = await _userManager.ConfirmEmailAsync(user, model.Token);
             if (result == null)
             {
-                return StatusCode((int)HttpStatusCode.InternalServerError, "Unable to confirm email.");
+                return StatusCode((int) HttpStatusCode.InternalServerError, "Unable to confirm email.");
             }
             return Ok();
         }
@@ -105,19 +120,21 @@ namespace OGame.Api.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null)
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel), "The combination of this email and password not found.");
+                    ModelState.AddModelError(nameof(LoginViewModel),
+                        "The combination of this email and password not found.");
                     return BadRequest(ModelState);
                 }
                 var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
                 if (!result.Succeeded)
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel), "The combination of this email and password not found.");
+                    ModelState.AddModelError(nameof(LoginViewModel),
+                        "The combination of this email and password not found.");
                     return BadRequest(ModelState);
                 }
 
                 if (await _userManager.IsEmailConfirmedAsync(user))
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel.Email), "Email not confirmed.");
+                    ModelState.AddModelError(nameof(LoginViewModel.Email), "This account is not confirmed.");
                     // TODO: resend email confirmation
                     return BadRequest(ModelState);
                 }
@@ -140,7 +157,7 @@ namespace OGame.Api.Controllers
                     claims: claims,
                     expires: DateTime.UtcNow.AddDays(30),
                     signingCredentials: credentials
-                    );
+                );
 
                 return Ok(new
                 {
@@ -152,7 +169,7 @@ namespace OGame.Api.Controllers
             catch (Exception e)
             {
                 _logger.LogError($"Error while creating token: {e}");
-                return StatusCode((int)HttpStatusCode.InternalServerError, "Error while generating token.");
+                return StatusCode((int) HttpStatusCode.InternalServerError, "Error while generating token.");
             }
         }
 
@@ -171,7 +188,7 @@ namespace OGame.Api.Controllers
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             //TODO: change baseUrl to client and resend to backend...
             var baseUrl = new Uri(Request.GetUri().GetLeftPart(UriPartial.Authority));
-            var callbackUrl = new Uri(baseUrl, Url.Action("ResetPassword", new { userId = user.Id, token }));
+            var callbackUrl = new Uri(baseUrl, Url.Action("ResetPassword", new {userId = user.Id, token}));
             await _emailSender.SendEmailAsync(user.Email, "Reset password",
                 $"Please reset your password by going to this address: {callbackUrl}.");
             return Ok();
@@ -192,27 +209,27 @@ namespace OGame.Api.Controllers
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
             if (!result.Succeeded)
             {
-                AddRegisterModelErrors(result);
+                // TODO
+                // AddRegisterModelErrors(result);
                 return BadRequest(ModelState);
             }
             return Ok();
         }
 
-        private void AddRegisterModelErrors(IdentityResult result)
+        private IActionResult GetRegisterError(IdentityResult result, ref RegisterViewModel model)
         {
             foreach (var error in result.Errors)
             {
-                string attribute;
-                if (error.Code.StartsWith("password", StringComparison.InvariantCultureIgnoreCase))
+                switch (error.Code)
                 {
-                    attribute = nameof(RegisterViewModel.Password);
+                    case "DuplicateEmail":
+                        return ApiErrors.DuplicateEmail(model.Email);
+
+                    default:
+                        throw new NotImplementedException(error.Code);
                 }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-                ModelState.AddModelError(attribute, error.Description);
             }
+            throw new NotImplementedException();
         }
     }
 }
