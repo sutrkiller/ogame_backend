@@ -35,7 +35,7 @@ namespace OGame.Services
             message.From.Add(new MailboxAddress(_emailSettings.Value.FromEmail));
             message.To.Add(new MailboxAddress(email));
             message.Subject = subject;
-            message.Body = new TextPart(TextFormat.Plain)
+            message.Body = new TextPart(TextFormat.Html)
             {
                 Text = content
             };

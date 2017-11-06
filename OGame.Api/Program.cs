@@ -15,9 +15,7 @@ namespace OGame.Api
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    config.AddJsonFile("appsettings-security.json", false, true);
-                    config.AddJsonFile("appsettings-connections.json", false, true);
-                    config.AddJsonFile("appsettings-emails.json", false, true);
+                    config.AddJsonFile("appsettings-private.json", false, true);
                 })
                 .UseStartup<Startup>()
                 .Build();

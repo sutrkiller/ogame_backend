@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using OGame.Api.Models.NotificationModels;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
+using OGame.Api.Helpers;
 
 namespace OGame.Api.Filters
 {

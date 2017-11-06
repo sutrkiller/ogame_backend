@@ -14,9 +14,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using OGame.Api.Filters;
+using OGame.Api.Helpers;
 using OGame.Api.Models.AccountViewModels;
-using OGame.Api.Models.NotificationModels;
-using OGame.Auth.Contexts;
 using OGame.Services.Interfaces;
 using OGame.Auth.Models;
 
@@ -41,11 +40,8 @@ namespace OGame.Api.Controllers
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
-            ;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            ;
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            ;
             _idGenerator = idGenerator ?? throw new ArgumentNullException(nameof(idGenerator));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -70,7 +66,7 @@ namespace OGame.Api.Controllers
             {
                 _logger.LogWarning($"Creating of local account with email {model.Email} failed.");
 
-                return GetRegisterError(result, ref model);
+                return GetRegisterError(result);
             }
 
             try
@@ -81,8 +77,6 @@ namespace OGame.Api.Controllers
             catch (Exception e)
             {
                 _logger.LogError(e, $"Unable to send a confirmation email to address {model.Email}");
-                //TODO: delay deleting in 30 days...
-                await _userManager.DeleteAsync(user);
                 return ApiErrors.UnreachableEmail(model.Email);
             }
 
@@ -216,20 +210,28 @@ namespace OGame.Api.Controllers
             return Ok();
         }
 
-        private IActionResult GetRegisterError(IdentityResult result, ref RegisterViewModel model)
+        private IActionResult GetRegisterError(IdentityResult result)
         {
             foreach (var error in result.Errors)
             {
+                string property;
                 switch (error.Code)
                 {
                     case "DuplicateEmail":
-                        return ApiErrors.DuplicateEmail(model.Email);
+                        property = nameof(RegisterViewModel.Email);
+                        break;
+
+                    case "DuplicateUserName":
+                        property = nameof(RegisterViewModel.UserName);
+                        break;
+
 
                     default:
                         throw new NotImplementedException(error.Code);
                 }
+                ModelState.AddModelError(property, error.Description);
             }
-            throw new NotImplementedException();
+            return ApiErrors.InvalidModel(ModelState);
         }
     }
 }

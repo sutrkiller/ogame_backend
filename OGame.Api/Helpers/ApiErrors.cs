@@ -2,8 +2,9 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using OGame.Api.Models.NotificationModels;
 
-namespace OGame.Api.Models.NotificationModels
+namespace OGame.Api.Helpers
 {
     public static class ApiErrors
     {
@@ -18,18 +19,7 @@ namespace OGame.Api.Models.NotificationModels
             };
             return new BadRequestObjectResult(model);
         }
-
-        public static IActionResult DuplicateEmail(string email)
-        {
-            var model = new ErrorResponseModel
-            {
-                Code = ErrorCode.DuplicateEmail,
-                Message = $"An account with email address {email} already exists, you can login or choose different email address",
-                Data = new List<ErrorMessage> {new ErrorMessage("email", "An account with this email address alrady exists")}
-            };
-            return new BadRequestObjectResult(model);
-        }
-
+        
         public static IActionResult UnreachableEmail(string email)
         {
             var model = new ErrorResponseModel

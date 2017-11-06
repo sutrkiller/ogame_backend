@@ -262,3 +262,5 @@ __pycache__/
 /OGame.Api/appsettings-security.json
 /OGame.Api/appsettings-connections.json
 /OGame.Api/appsettings-emails.json
+/OGame.Api/appsettings-private.json
+/OGame.ScheduledJobs/appsettings-private.json
