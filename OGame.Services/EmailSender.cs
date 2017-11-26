@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.WebUtilities;
 using MimeKit;
 using MimeKit.Text;
 using OGame.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using OGame.Services.Configuration;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace OGame.Services
 {
@@ -24,7 +24,7 @@ namespace OGame.Services
             _clientSettings = clientSettings ?? throw new ArgumentNullException(nameof(clientSettings));
         }
 
-        public async Task SendEmailAsync(string email, string subject, string content)
+        public async Task SendHtmlEmailAsync(string email, string subject, string content)
         {
             if (!new EmailAddressAttribute().IsValid(email))
             {
@@ -59,10 +59,10 @@ namespace OGame.Services
                 new Dictionary<string, string> {{"userId", userId.ToString()}, {"token", token}});
 
             var subject = "Security confirmation of OGame account";
-            var message = $"<p>Hello!</p> <p>You just created new account with email address {email}.</p><p>If you created this account, confirm it for security reasons by clicking the following address: {url}.</p><p>Thank you.<br/>OGame team</p>";
+            var message = $"<p>Hello!</p> <p>You just created new account with email address {email}.</p><p>If you created this account, confirm it for security reasons by clicking the following address: {url}</p><p>Thank you.<br/>OGame team</p>";
 
             //TODO: retry or do in a webjob
-            await SendEmailAsync(email, subject, message);
+            await SendHtmlEmailAsync(email, subject, message);
         }
     }
 }

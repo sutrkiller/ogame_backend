@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using OGame.Api.Filters;
 using OGame.Api.Helpers;
 using OGame.Api.Models.AccountViewModels;
@@ -59,14 +60,14 @@ namespace OGame.Api.Controllers
                 JoinDate = DateTime.UtcNow
             };
 
-            _logger.LogInformation($"Creating local account with email {model.Email}.");
+            _logger.LogInformation($"Creating local account with email '{model.Email}'.");
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
             {
-                _logger.LogWarning($"Creating of local account with email {model.Email} failed.");
+                _logger.LogWarning($"Creating of local account with email '{model.Email}' failed.");
 
-                return GetRegisterError(result);
+                return GetRegisterErrors(result);
             }
 
             try
@@ -76,30 +77,30 @@ namespace OGame.Api.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Unable to send a confirmation email to address {model.Email}");
+                _logger.LogError(e, $"Unable to send a confirmation email to address '{model.Email}'");
                 return ApiErrors.UnreachableEmail(model.Email);
             }
 
-            _logger.LogInformation($"New local user account with email {model.Email} created.");
-            //TOdo: change to created?
+            _logger.LogInformation($"New local user account with email '{model.Email}' created.");
             return Ok(result);
         }
 
-        [HttpGet]
         [AllowAnonymous]
+        [HttpPost("confirmEmail")]
         [ValidateModel]
-        public async Task<IActionResult> ConfirmEmail([FromQuery] ConfirmEmailViewModel model)
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailViewModel model)
         {
             var user = await _userManager.FindByIdAsync(model.UserId.ToString());
             if (user == null)
             {
-                ModelState.AddModelError(nameof(ConfirmEmailViewModel), "Unable to confirm email.");
-                return BadRequest(ModelState);
+                _logger.LogError($"Unable to confirm account with user id '{model.UserId}' and token '{model.Token}'");
+                return ApiErrors.UnableToConfirmEmail(model.UserId);
             }
             var result = await _userManager.ConfirmEmailAsync(user, model.Token);
-            if (result == null)
+            if (!result.Succeeded)
             {
-                return StatusCode((int) HttpStatusCode.InternalServerError, "Unable to confirm email.");
+                _logger.LogError($"Confirming account with user id '{model.UserId}' and token '{model.Token}' failed. Result: {JsonConvert.SerializeObject(result)}");
+                return ApiErrors.UnkownError();
             }
             return Ok();
         }
@@ -183,7 +184,7 @@ namespace OGame.Api.Controllers
             //TODO: change baseUrl to client and resend to backend...
             var baseUrl = new Uri(Request.GetUri().GetLeftPart(UriPartial.Authority));
             var callbackUrl = new Uri(baseUrl, Url.Action("ResetPassword", new {userId = user.Id, token}));
-            await _emailSender.SendEmailAsync(user.Email, "Reset password",
+            await _emailSender.SendHtmlEmailAsync(user.Email, "Reset password",
                 $"Please reset your password by going to this address: {callbackUrl}.");
             return Ok();
         }
@@ -210,7 +211,7 @@ namespace OGame.Api.Controllers
             return Ok();
         }
 
-        private IActionResult GetRegisterError(IdentityResult result)
+        private IActionResult GetRegisterErrors(IdentityResult result)
         {
             foreach (var error in result.Errors)
             {
@@ -224,7 +225,6 @@ namespace OGame.Api.Controllers
                     case "DuplicateUserName":
                         property = nameof(RegisterViewModel.UserName);
                         break;
-
 
                     default:
                         throw new NotImplementedException(error.Code);

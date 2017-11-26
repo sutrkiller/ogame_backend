@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OGame.Auth.Contexts;
 using OGame.Auth.Models;
 
@@ -37,11 +38,22 @@ namespace OGame.ScheduledJobs
 
         static async Task Main()
         {
+            await DeleteUncofirmedAccounts();
+        }
+
+        private static async Task<int> DeleteUncofirmedAccounts()
+        {
             var userManager = ServiceProvider.GetService<UserManager<ApplicationUser>>();
-            var deleteBefore = DateTime.UtcNow  - TimeSpan.FromDays(30);
+            var logger = ServiceProvider.GetService<ILogger<Program>>();
+            var deleteBefore = DateTime.UtcNow - TimeSpan.FromDays(30);
 
             var usersToDelete = userManager.Users.Where(u => !u.EmailConfirmed && u.JoinDate < deleteBefore);
-            await usersToDelete.ForEachAsync(async u => await userManager.DeleteAsync(u));
+            await usersToDelete.ForEachAsync(async u =>
+            {
+                logger.LogInformation($"Deleting account with email '{u.Email}'.");
+                await userManager.DeleteAsync(u);
+            });
+            return usersToDelete.Count();
         }
     }
 }

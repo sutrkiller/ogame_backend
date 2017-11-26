@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -27,6 +28,28 @@ namespace OGame.Api.Helpers
                 Code = ErrorCode.UnreachableEmail,
                 Message = $"An email address {email} could not be reached",
                 Data = new List<ErrorMessage> { new ErrorMessage("email", "Unable to send confirmation email to this address") }
+            };
+            return new BadRequestObjectResult(model);
+        }
+
+        public static IActionResult UnableToConfirmEmail(Guid userId)
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.UnableToConfirmEmail,
+                Message = "Unable to confirm the account. Please try again later",
+                Data = new List<ErrorMessage>()
+            };
+            return new BadRequestObjectResult(model);
+        }
+
+        public static IActionResult UnkownError()
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.UnkownError,
+                Message = "An unknown error occured at the server. Try again later. If this problem persists contact our support.",
+                Data = new List<ErrorMessage>()
             };
             return new BadRequestObjectResult(model);
         }

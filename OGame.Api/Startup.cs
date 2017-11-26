@@ -36,6 +36,8 @@ namespace OGame.Api
                 .AddEntityFrameworkStores<SecurityContext>()
                 .AddDefaultTokenProviders();
 
+
+
             services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequireDigit = true;
