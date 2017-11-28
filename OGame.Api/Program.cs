@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using OGame.Configuration;
 
 namespace OGame.Api
 {
@@ -15,7 +15,7 @@ namespace OGame.Api
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    config.AddJsonFile("appsettings-private.json", false, true);
+                    config.AddSharedConfig();
                 })
                 .UseStartup<Startup>()
                 .Build();

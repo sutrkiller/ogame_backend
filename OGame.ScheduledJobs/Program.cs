@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
@@ -7,8 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OGame.Auth.Contexts;
 using OGame.Auth.Models;
+using OGame.Configuration;
+using OGame.Configuration.Settings;
 
 namespace OGame.ScheduledJobs
 {
@@ -19,8 +21,7 @@ namespace OGame.ScheduledJobs
         static Program()
         {
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings-private.json")
+                .AddSharedConfig()
                 .Build();
 
             IServiceCollection serviceCollection = new ServiceCollection();
@@ -32,6 +33,8 @@ namespace OGame.ScheduledJobs
             {
                 options.UseSqlServer(configuration.GetConnectionString("SecurityConnection"));
             });
+
+            serviceCollection.ConfigureSettings(configuration);
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
         }
@@ -45,7 +48,9 @@ namespace OGame.ScheduledJobs
         {
             var userManager = ServiceProvider.GetService<UserManager<ApplicationUser>>();
             var logger = ServiceProvider.GetService<ILogger<Program>>();
-            var deleteBefore = DateTime.UtcNow - TimeSpan.FromDays(30);
+            var accountSettings = ServiceProvider.GetService<IOptions<AccountSettings>>().Value;
+
+            var deleteBefore = DateTime.UtcNow - TimeSpan.FromDays(accountSettings.ExpirationDays);
 
             var usersToDelete = userManager.Users.Where(u => !u.EmailConfirmed && u.JoinDate < deleteBefore);
             await usersToDelete.ForEachAsync(async u =>

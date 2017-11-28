@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,8 +9,8 @@ using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using OGame.Api.Filters;
@@ -19,6 +18,7 @@ using OGame.Api.Helpers;
 using OGame.Api.Models.AccountViewModels;
 using OGame.Services.Interfaces;
 using OGame.Auth.Models;
+using OGame.Configuration.Settings;
 
 namespace OGame.Api.Controllers
 {
@@ -27,22 +27,22 @@ namespace OGame.Api.Controllers
     [Route("api/[controller]")]
     public class AccountController : Controller
     {
+        private readonly TokenSettings _tokenSettings;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
-        private readonly IConfiguration _configuration;
         private readonly IIdGenerator _idGenerator;
         private readonly IEmailSender _emailSender;
         private readonly IMapper _mapper;
 
         public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-            ILogger<AccountController> logger, IConfiguration configuration, IIdGenerator idGenerator,
-            IEmailSender emailSender, IMapper mapper)
+            ILogger<AccountController> logger, IIdGenerator idGenerator,
+            IEmailSender emailSender, IMapper mapper, IOptions<TokenSettings> tokenSettings)
         {
+            _tokenSettings = tokenSettings.Value ?? throw new ArgumentNullException(nameof(tokenSettings));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _idGenerator = idGenerator ?? throw new ArgumentNullException(nameof(idGenerator));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -82,7 +82,7 @@ namespace OGame.Api.Controllers
             }
 
             _logger.LogInformation($"New local user account with email '{model.Email}' created.");
-            return Ok(result);
+            return Ok(_mapper.Map<UserViewModel>(user));
         }
 
         [AllowAnonymous]
@@ -90,6 +90,7 @@ namespace OGame.Api.Controllers
         [ValidateModel]
         public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailViewModel model)
         {
+            _logger.LogInformation($"Confirming account with user id '{model.UserId}'.");
             var user = await _userManager.FindByIdAsync(model.UserId.ToString());
             if (user == null)
             {
@@ -108,30 +109,27 @@ namespace OGame.Api.Controllers
         [AllowAnonymous]
         [HttpPost("token")]
         [ValidateModel]
-        public async Task<IActionResult> CreateToken([FromBody] LoginViewModel model)
+        public async Task<IActionResult> CreateToken([FromBody] SignInViewModel model)
         {
             try
             {
+                _logger.LogInformation($"Signing user with email '{model.Email}'.");
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null)
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel),
-                        "The combination of this email and password not found.");
-                    return BadRequest(ModelState);
+                    _logger.LogInformation($"User with email '{model.Email}' not found.");
+                    return ApiErrors.IncorrectSignInData();
                 }
                 var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
                 if (!result.Succeeded)
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel),
-                        "The combination of this email and password not found.");
-                    return BadRequest(ModelState);
+                    _logger.LogInformation($"Incorrect password when signing '{model.Email}'.");
+                    return ApiErrors.IncorrectSignInData();
                 }
 
-                if (await _userManager.IsEmailConfirmedAsync(user))
+                if (!await _userManager.IsEmailConfirmedAsync(user))
                 {
-                    ModelState.AddModelError(nameof(LoginViewModel.Email), "This account is not confirmed.");
-                    // TODO: resend email confirmation
-                    return BadRequest(ModelState);
+                    _logger.LogInformation($"Signing user with unconfirmed email address '{model.Email}'.");
                 }
 
                 var userClaims = await _userManager.GetClaimsAsync(user);
@@ -143,14 +141,14 @@ namespace OGame.Api.Controllers
                     new Claim(JwtRegisteredClaimNames.Jti, _idGenerator.GenerateId().ToString()),
                 }.Union(userClaims);
 
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Tokens:Key"]));
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSettings.Key));
                 var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
                 var token = new JwtSecurityToken(
-                    issuer: _configuration["Tokens:Issuer"],
-                    audience: _configuration["Tokens:Issuer"],
+                    issuer: _tokenSettings.Issuer,
+                    audience: _tokenSettings.Issuer,
                     claims: claims,
-                    expires: DateTime.UtcNow.AddDays(30),
+                    expires: DateTime.UtcNow.AddDays(_tokenSettings.ExpirationDays),
                     signingCredentials: credentials
                 );
 
@@ -164,7 +162,7 @@ namespace OGame.Api.Controllers
             catch (Exception e)
             {
                 _logger.LogError($"Error while creating token: {e}");
-                return StatusCode((int) HttpStatusCode.InternalServerError, "Error while generating token.");
+                return ApiErrors.UnkownError();
             }
         }
 

@@ -11,8 +11,8 @@ using Microsoft.IdentityModel.Tokens;
 using AutoMapper;
 using OGame.Auth.Contexts;
 using OGame.Auth.Models;
+using OGame.Configuration;
 using OGame.Services;
-using OGame.Services.Configuration;
 using OGame.Services.Interfaces;
 
 namespace OGame.Api
@@ -75,8 +75,7 @@ namespace OGame.Api
 
             services.AddAutoMapper(typeof(Startup));
 
-            services.Configure<EmailSettings>(Configuration.GetSection("EmailSettings"));
-            services.Configure<ClientSettings>(Configuration.GetSection("Client"));
+            services.ConfigureSettings(Configuration);
             services.AddSingleton<IIdGenerator, IdGenerator>();
             services.AddSingleton<IDateTimeService, DateTimeService>();
             services.AddTransient<IEmailSender, EmailSender>();

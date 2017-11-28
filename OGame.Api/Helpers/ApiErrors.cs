@@ -43,6 +43,17 @@ namespace OGame.Api.Helpers
             return new BadRequestObjectResult(model);
         }
 
+        public static IActionResult IncorrectSignInData()
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.IncorrectSignInData,
+                Message = "The combination of this email and password not found.",
+                Data = new List<ErrorMessage> { new ErrorMessage("password", "The combination of this email and password not found.")}
+            };
+            return new BadRequestObjectResult(model);
+        }
+
         public static IActionResult UnkownError()
         {
             var model = new ErrorResponseModel

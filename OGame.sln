@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2006
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Api", "OGame.Api\OGame.Api.csproj", "{7BE6B7EA-2639-4D70-A244-67D64AC28C7A}"
 EndProject
@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Auth", "OGame.Auth\OG
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Services", "OGame.Services\OGame.Services.csproj", "{420073FD-6B41-44F5-B97A-4D835FA9C47E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OGame.ScheduledJobs", "OGame.ScheduledJobs\OGame.ScheduledJobs.csproj", "{41C4A7D9-CAAA-4762-8764-F49A06BA0990}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.ScheduledJobs", "OGame.ScheduledJobs\OGame.ScheduledJobs.csproj", "{41C4A7D9-CAAA-4762-8764-F49A06BA0990}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OGame.Configuration", "OGame.Configuration\OGame.Configuration.csproj", "{553D7961-7FB6-4EF4-B4F7-80792D849D54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{41C4A7D9-CAAA-4762-8764-F49A06BA0990}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41C4A7D9-CAAA-4762-8764-F49A06BA0990}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41C4A7D9-CAAA-4762-8764-F49A06BA0990}.Release|Any CPU.Build.0 = Release|Any CPU
+		{553D7961-7FB6-4EF4-B4F7-80792D849D54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{553D7961-7FB6-4EF4-B4F7-80792D849D54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{553D7961-7FB6-4EF4-B4F7-80792D849D54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{553D7961-7FB6-4EF4-B4F7-80792D849D54}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

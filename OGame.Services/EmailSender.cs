@@ -8,20 +8,20 @@ using MimeKit;
 using MimeKit.Text;
 using OGame.Services.Interfaces;
 using Microsoft.Extensions.Options;
-using OGame.Services.Configuration;
+using OGame.Configuration.Settings;
 
 namespace OGame.Services
 {
     // TODO: consider moving to console application that would read queue with emails to be sent.
     public class EmailSender : IEmailSender
     {
-        private readonly IOptions<EmailSettings> _emailSettings;
-        private readonly IOptions<ClientSettings> _clientSettings;
+        private readonly EmailSettings _emailSettings;
+        private readonly ClientSettings _clientSettings;
 
         public EmailSender(IOptions<EmailSettings> emailSettings, IOptions<ClientSettings> clientSettings)
         {
-            _emailSettings = emailSettings ?? throw new ArgumentNullException(nameof(emailSettings));
-            _clientSettings = clientSettings ?? throw new ArgumentNullException(nameof(clientSettings));
+            _emailSettings = emailSettings.Value ?? throw new ArgumentNullException(nameof(emailSettings));
+            _clientSettings = clientSettings.Value ?? throw new ArgumentNullException(nameof(clientSettings));
         }
 
         public async Task SendHtmlEmailAsync(string email, string subject, string content)
@@ -32,7 +32,7 @@ namespace OGame.Services
             }
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_emailSettings.Value.FromEmail));
+            message.From.Add(new MailboxAddress(_emailSettings.FromEmail));
             message.To.Add(new MailboxAddress(email));
             message.Subject = subject;
             message.Body = new TextPart(TextFormat.Html)
@@ -42,8 +42,8 @@ namespace OGame.Services
 
             using (var client = new SmtpClient())
             {
-                await client.ConnectAsync(_emailSettings.Value.PrimaryDomain, _emailSettings.Value.PrimaryPort);
-                await client.AuthenticateAsync(_emailSettings.Value.UsernameEmail, _emailSettings.Value.UsernamePassword);
+                await client.ConnectAsync(_emailSettings.PrimaryDomain, _emailSettings.PrimaryPort);
+                await client.AuthenticateAsync(_emailSettings.UsernameEmail, _emailSettings.UsernamePassword);
 
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
@@ -53,8 +53,8 @@ namespace OGame.Services
         public async Task SendConfirmationEmailAsync(string email, Guid userId, string token)
         {
             //var query = new QueryHelpers.
-            var baseUrl = new Uri(_clientSettings.Value.BaseUrl);
-            var url = new Uri(baseUrl, _clientSettings.Value.ConfirmEmailEndpoint).ToString();
+            var baseUrl = new Uri(_clientSettings.BaseUrl);
+            var url = new Uri(baseUrl, _clientSettings.ConfirmEmailEndpoint).ToString();
             url = QueryHelpers.AddQueryString(url,
                 new Dictionary<string, string> {{"userId", userId.ToString()}, {"token", token}});
 

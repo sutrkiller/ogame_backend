@@ -259,8 +259,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-/OGame.Api/appsettings-security.json
-/OGame.Api/appsettings-connections.json
-/OGame.Api/appsettings-emails.json
-/OGame.Api/appsettings-private.json
-/OGame.ScheduledJobs/appsettings-private.json
+
+/OGame.Configuration/appsettings-private.json

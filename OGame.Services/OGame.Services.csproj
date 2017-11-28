@@ -19,4 +19,8 @@
     <Folder Include="Models\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\OGame.Configuration\OGame.Configuration.csproj" />
+  </ItemGroup>
+
 </Project>

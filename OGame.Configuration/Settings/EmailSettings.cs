@@ -1,4 +1,4 @@
-﻿namespace OGame.Services.Configuration
+﻿namespace OGame.Configuration.Settings
 {
     public class EmailSettings
     {

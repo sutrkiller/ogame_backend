@@ -2,7 +2,7 @@
 
 namespace OGame.Api.Models.AccountViewModels
 {
-    public class LoginViewModel
+    public class SignInViewModel
     {
         [Required]
         [EmailAddress]

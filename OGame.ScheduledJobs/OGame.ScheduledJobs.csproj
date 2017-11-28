@@ -10,13 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="appsettings-private.json">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.0" />
@@ -24,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OGame.Auth\OGame.Auth.csproj" />
+    <ProjectReference Include="..\OGame.Configuration\OGame.Configuration.csproj" />
   </ItemGroup>
 
 </Project>
