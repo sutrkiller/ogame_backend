@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -107,9 +108,9 @@ namespace OGame.Api.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("token")]
+        [HttpPost("signIn")]
         [ValidateModel]
-        public async Task<IActionResult> CreateToken([FromBody] SignInViewModel model)
+        public async Task<IActionResult> SignIn([FromBody] SignInViewModel model)
         {
             try
             {
@@ -154,8 +155,10 @@ namespace OGame.Api.Controllers
 
                 return Ok(new
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(token),
-                    expiration = token.ValidTo,
+                    token = new {
+                        value = new JwtSecurityTokenHandler().WriteToken(token),
+                        expirationDate = token.ValidTo
+                    },
                     user = _mapper.Map<UserViewModel>(user)
                 });
             }
@@ -164,6 +167,39 @@ namespace OGame.Api.Controllers
                 _logger.LogError($"Error while creating token: {e}");
                 return ApiErrors.UnkownError();
             }
+        }
+
+        [HttpGet("details")]
+        public async Task<IActionResult> GetAccountDetails()
+        {
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            var user = await _userManager.FindByEmailAsync(userEmail);
+
+            if (user == null)
+            {
+                _logger.LogInformation("User not found.");
+                throw new ArgumentException();
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            var stringToken = Request.Headers["Authorization"].Select(x => x.Replace("Bearer ", "")).FirstOrDefault();
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(stringToken);
+
+            return Ok(new
+            {
+                token = new
+                {
+                    value = stringToken,
+                    expirationDate = token.ValidTo
+                },
+                user = _mapper.Map<UserViewModel>(user)
+            });
+        }
+
+        [HttpPost("signOut")]
+        public async Task<IActionResult> SignOut()
+        {
+            return Ok();
         }
 
         [AllowAnonymous]
