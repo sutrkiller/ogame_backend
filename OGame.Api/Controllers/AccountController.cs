@@ -5,9 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -52,7 +50,7 @@ namespace OGame.Api.Controllers
         [AllowAnonymous]
         [HttpPost("register")]
         [ValidateModel]
-        public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
+        public async Task<IActionResult> RegisterAsync([FromBody] RegisterViewModel model)
         {
             var user = new ApplicationUser
             {
@@ -89,7 +87,7 @@ namespace OGame.Api.Controllers
         [AllowAnonymous]
         [HttpPost("confirmEmail")]
         [ValidateModel]
-        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailViewModel model)
+        public async Task<IActionResult> ConfirmEmailAsync([FromBody] ConfirmEmailViewModel model)
         {
             _logger.LogInformation($"Confirming account with user id '{model.UserId}'.");
             var user = await _userManager.FindByIdAsync(model.UserId.ToString());
@@ -110,7 +108,7 @@ namespace OGame.Api.Controllers
         [AllowAnonymous]
         [HttpPost("signIn")]
         [ValidateModel]
-        public async Task<IActionResult> SignIn([FromBody] SignInViewModel model)
+        public async Task<IActionResult> SignInAsync([FromBody] SignInViewModel model)
         {
             try
             {
@@ -170,7 +168,7 @@ namespace OGame.Api.Controllers
         }
 
         [HttpGet("details")]
-        public async Task<IActionResult> GetAccountDetails()
+        public async Task<IActionResult> GetAccountDetailsAsync()
         {
             var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
             var user = await _userManager.FindByEmailAsync(userEmail);
@@ -179,7 +177,6 @@ namespace OGame.Api.Controllers
             {
                 _logger.LogInformation("User not found.");
                 throw new ArgumentException();
-                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             var stringToken = Request.Headers["Authorization"].Select(x => x.Replace("Bearer ", "")).FirstOrDefault();
@@ -197,50 +194,55 @@ namespace OGame.Api.Controllers
         }
 
         [HttpPost("signOut")]
-        public async Task<IActionResult> SignOut()
+        public async Task<IActionResult> SignOutAsync()
         {
-            return Ok();
-        }
-
-        [AllowAnonymous]
-        [HttpPost]
-        [ValidateModel]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
-        {
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (email == null)
             {
-                ModelState.AddModelError(nameof(ForgotPasswordViewModel), "Unable to recover password.");
-                return BadRequest(user);
+                _logger.LogInformation("User not found on SignOut.");
+                throw new ArgumentException();
             }
-
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            //TODO: change baseUrl to client and resend to backend...
-            var baseUrl = new Uri(Request.GetUri().GetLeftPart(UriPartial.Authority));
-            var callbackUrl = new Uri(baseUrl, Url.Action("ResetPassword", new {userId = user.Id, token}));
-            await _emailSender.SendHtmlEmailAsync(user.Email, "Reset password",
-                $"Please reset your password by going to this address: {callbackUrl}.");
+            _logger.LogInformation($"User with email '{email}' signing out.");
+            await Task.CompletedTask;
             return Ok();
         }
 
         [AllowAnonymous]
-        [HttpPost]
+        [HttpPost("forgotPassword")]
         [ValidateModel]
-        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        public async Task<IActionResult> ForgotPasswordAsync([FromBody]ForgotPasswordViewModel model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                ModelState.AddModelError(nameof(ResetPasswordViewModel), "Reseting password failed.");
-                return BadRequest(ModelState);
+                return ApiErrors.AccountNotFound(model.Email);
+            }
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+            {
+                return ApiErrors.UnableToRecoverPassword(model.Email);
+            }
+
+            _logger.LogInformation($"Sending recovery link for account '{model.Email}'.");
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            await _emailSender.SendForgotPasswordEmailAsync(user.Email, user.Id, token);
+            return Ok();
+        }
+
+        [AllowAnonymous]
+        [HttpPost("resetPassword")]
+        [ValidateModel]
+        public async Task<IActionResult> ResetPasswordAsync([FromBody]ResetPasswordViewModel model)
+        {
+            var user = await _userManager.FindByIdAsync(model.UserId.ToString());
+            if (user == null)
+            {
+                return ApiErrors.UnableToResetPassword(model.UserId, model.Token);
             }
 
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
             if (!result.Succeeded)
             {
-                // TODO
-                // AddRegisterModelErrors(result);
-                return BadRequest(ModelState);
+                return GetResetPasswordErrors(result);
             }
             return Ok();
         }
@@ -264,6 +266,21 @@ namespace OGame.Api.Controllers
                         throw new NotImplementedException(error.Code);
                 }
                 ModelState.AddModelError(property, error.Description);
+            }
+            return ApiErrors.InvalidModel(ModelState);
+        }
+
+        private IActionResult GetResetPasswordErrors(IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
+                // string property;
+                switch (error.Code)
+                {
+                    default:
+                        throw new NotImplementedException(error.Code);
+                }
+                // ModelState.AddModelError(property, error.Description);
             }
             return ApiErrors.InvalidModel(ModelState);
         }

@@ -64,5 +64,38 @@ namespace OGame.Api.Helpers
             };
             return new BadRequestObjectResult(model);
         }
+
+        public static IActionResult AccountNotFound(string email)
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.AccountNotFound,
+                Message = $"An account with email '{email}' not found.",
+                Data = new List<ErrorMessage> { new ErrorMessage("email", "This email was not found.") }
+            };
+            return new BadRequestObjectResult(model);
+        }
+
+        public static IActionResult UnableToRecoverPassword(string email)
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.UnableToRecoverPassword,
+                Message = $"Unable to recover password for an account with email '{email}'. This email wasn't confirmed.",
+                Data = new List<ErrorMessage> { new ErrorMessage("email", "A password for this account can't be recovered.") }
+            };
+            return new BadRequestObjectResult(model);
+        }
+
+        public static IActionResult UnableToResetPassword(Guid userId, string token)
+        {
+            var model = new ErrorResponseModel
+            {
+                Code = ErrorCode.UnableToResetPassword,
+                Message = "Combination of user id and token is invalid.",
+                Data = new List<ErrorMessage>()
+            };
+            return new BadRequestObjectResult(model);
+        }
     }
 }

@@ -58,10 +58,23 @@ namespace OGame.Services
             url = QueryHelpers.AddQueryString(url,
                 new Dictionary<string, string> {{"userId", userId.ToString()}, {"token", token}});
 
-            var subject = "Security confirmation of OGame account";
+            var subject = "[OGame] Security confirmation of OGame account";
             var message = $"<p>Hello!</p> <p>You just created new account with email address {email}.</p><p>If you created this account, confirm it for security reasons by clicking the following address: {url}</p><p>Thank you.<br/>OGame team</p>";
 
             //TODO: retry or do in a webjob
+            await SendHtmlEmailAsync(email, subject, message);
+        }
+
+        public async Task SendForgotPasswordEmailAsync(string email, Guid userId, string token)
+        {
+            var baseUrl = new Uri(_clientSettings.BaseUrl);
+            var url = new Uri(baseUrl, _clientSettings.ResetPasswordEndpoint).ToString();
+            url = QueryHelpers.AddQueryString(url,
+                new Dictionary<string, string> {{"userId", userId.ToString()}, {"token", token}});
+
+            var subject = "[OGame] Reset password";
+            var message = $"<p>Hello!</p> <p>You just requested resetting your password.</p><p>You can change your password on the following address: {url}</p><p>Thank you.<br/><p>If you haven't requested reseting your password, please ignore this email.</p><br/>OGame team</p>";
+
             await SendHtmlEmailAsync(email, subject, message);
         }
     }

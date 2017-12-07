@@ -7,7 +7,10 @@
         UnreachableEmail = 403,
         UnableToConfirmEmail = 404,
         IncorrectSignInData = 405,
+        AccountNotFound = 406,
+        UnableToRecoverPassword = 407,
+        UnableToResetPassword = 408,
 
-        UnkownError = 500,
+        UnkownError = 500
     }
 }

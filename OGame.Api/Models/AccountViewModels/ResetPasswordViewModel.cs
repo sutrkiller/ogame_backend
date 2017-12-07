@@ -1,13 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace OGame.Api.Models.AccountViewModels
 {
     public class ResetPasswordViewModel
     {
         [Required]
-        [Display(Name = "Email")]
-        [EmailAddress]
-        public string Email { get; set; }
+        [Display(Name = "UserId")]
+        public Guid UserId { get; set; }
 
         [Required]
         [Display(Name = "Password")]
