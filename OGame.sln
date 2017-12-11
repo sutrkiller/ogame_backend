@@ -3,15 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Api", "OGame.Api\OGame.Api.csproj", "{7BE6B7EA-2639-4D70-A244-67D64AC28C7A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Api", "src\OGame.Api\OGame.Api.csproj", "{7BE6B7EA-2639-4D70-A244-67D64AC28C7A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Auth", "OGame.Auth\OGame.Auth.csproj", "{D4661ACA-78F5-4BFB-8D5E-90D14435CC06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Auth", "src\OGame.Auth\OGame.Auth.csproj", "{D4661ACA-78F5-4BFB-8D5E-90D14435CC06}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Services", "OGame.Services\OGame.Services.csproj", "{420073FD-6B41-44F5-B97A-4D835FA9C47E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Services", "src\OGame.Services\OGame.Services.csproj", "{420073FD-6B41-44F5-B97A-4D835FA9C47E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.ScheduledJobs", "OGame.ScheduledJobs\OGame.ScheduledJobs.csproj", "{41C4A7D9-CAAA-4762-8764-F49A06BA0990}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.ScheduledJobs", "src\OGame.ScheduledJobs\OGame.ScheduledJobs.csproj", "{41C4A7D9-CAAA-4762-8764-F49A06BA0990}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OGame.Configuration", "OGame.Configuration\OGame.Configuration.csproj", "{553D7961-7FB6-4EF4-B4F7-80792D849D54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OGame.Configuration", "src\OGame.Configuration\OGame.Configuration.csproj", "{553D7961-7FB6-4EF4-B4F7-80792D849D54}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3C6609C2-922D-42B5-815C-17BE124480A4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{210B1D3A-6274-4E6B-B276-65BD962B0012}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +46,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7BE6B7EA-2639-4D70-A244-67D64AC28C7A} = {3C6609C2-922D-42B5-815C-17BE124480A4}
+		{D4661ACA-78F5-4BFB-8D5E-90D14435CC06} = {3C6609C2-922D-42B5-815C-17BE124480A4}
+		{420073FD-6B41-44F5-B97A-4D835FA9C47E} = {3C6609C2-922D-42B5-815C-17BE124480A4}
+		{41C4A7D9-CAAA-4762-8764-F49A06BA0990} = {3C6609C2-922D-42B5-815C-17BE124480A4}
+		{553D7961-7FB6-4EF4-B4F7-80792D849D54} = {3C6609C2-922D-42B5-815C-17BE124480A4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A8AC36D8-86B8-4E25-8B71-56CD8ECE5E03}
