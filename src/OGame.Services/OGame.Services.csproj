@@ -10,11 +10,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
+    <ProjectReference Include="..\OGame.Configuration.Contracts\OGame.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\OGame.Repositories\OGame.Repositories.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OGame.Configuration\OGame.Configuration.csproj" />
+    <Reference Include="AutoMapper">
+      <HintPath>..\..\..\..\..\..\.nuget\packages\automapper\6.1.1\lib\netstandard1.3\AutoMapper.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

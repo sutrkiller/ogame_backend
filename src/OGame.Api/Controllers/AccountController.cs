@@ -17,7 +17,7 @@ using OGame.Api.Helpers;
 using OGame.Api.Models.AccountViewModels;
 using OGame.Services.Interfaces;
 using OGame.Auth.Models;
-using OGame.Configuration.Settings;
+using OGame.Configuration.Contracts.Settings;
 
 namespace OGame.Api.Controllers
 {
@@ -30,20 +30,20 @@ namespace OGame.Api.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
-        private readonly IIdGenerator _idGenerator;
-        private readonly IEmailSender _emailSender;
+        private readonly IIdProvider _idGenerator;
+        private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
 
         public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-            ILogger<AccountController> logger, IIdGenerator idGenerator,
-            IEmailSender emailSender, IMapper mapper, IOptions<TokenSettings> tokenSettings)
+            ILogger<AccountController> logger, IIdProvider idGenerator,
+            IEmailService emailService, IMapper mapper, IOptions<TokenSettings> tokenSettings)
         {
             _tokenSettings = tokenSettings.Value ?? throw new ArgumentNullException(nameof(tokenSettings));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _idGenerator = idGenerator ?? throw new ArgumentNullException(nameof(idGenerator));
-            _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -72,7 +72,7 @@ namespace OGame.Api.Controllers
             try
             {
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                await _emailSender.SendConfirmationEmailAsync(model.Email, user.Id, token);
+                await _emailService.SendConfirmationEmailAsync(model.Email, user.Id, token);
             }
             catch (Exception e)
             {
@@ -135,9 +135,9 @@ namespace OGame.Api.Controllers
 
                 var claims = new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, _idGenerator.GenerateId().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Jti, (await _idGenerator.NewId()).ToString()),
                 }.Union(userClaims);
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenSettings.Key));
@@ -224,7 +224,7 @@ namespace OGame.Api.Controllers
 
             _logger.LogInformation($"Sending recovery link for account '{model.Email}'.");
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            await _emailSender.SendForgotPasswordEmailAsync(user.Email, user.Id, token);
+            await _emailService.SendForgotPasswordEmailAsync(user.Email, user.Id, token);
             return Ok();
         }
 

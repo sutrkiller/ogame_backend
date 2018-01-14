@@ -4,9 +4,9 @@ using OGame.Services.Interfaces;
 
 namespace OGame.Services
 {
-    public class DateTimeService : IDateTimeService
+    public class DefaultDateTimeProvider : IDateTimeProvider
     {
         public async Task<DateTime> Now()
-            => await Task.FromResult(DateTime.Now);
+            => await Task.FromResult(DateTime.UtcNow);
     }
 }

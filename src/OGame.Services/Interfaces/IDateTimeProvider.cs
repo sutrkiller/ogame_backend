@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace OGame.Services.Interfaces
 {
-    public interface IDateTimeService
+    public interface IDateTimeProvider
     {
         Task<DateTime> Now();
     }

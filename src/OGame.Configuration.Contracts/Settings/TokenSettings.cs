@@ -1,4 +1,4 @@
-﻿namespace OGame.Configuration.Settings
+﻿namespace OGame.Configuration.Contracts.Settings
 {
     public class TokenSettings
     {

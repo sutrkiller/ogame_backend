@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,9 @@ using Microsoft.Extensions.Options;
 using OGame.Auth.Contexts;
 using OGame.Auth.Models;
 using OGame.Configuration;
-using OGame.Configuration.Settings;
+using OGame.Configuration.Contracts.Settings;
+using OGame.Repositories.Interfaces;
+using OGame.Services.Interfaces;
 
 namespace OGame.ScheduledJobs
 {
@@ -31,7 +34,7 @@ namespace OGame.ScheduledJobs
 
             serviceCollection.AddDbContext<SecurityContext>(options =>
             {
-                options.UseSqlServer(configuration.GetConnectionString("SecurityConnection"));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });
 
             serviceCollection.ConfigureSettings(configuration);
@@ -41,24 +44,22 @@ namespace OGame.ScheduledJobs
 
         static async Task Main()
         {
-            await DeleteUncofirmedAccounts();
-        }
-
-        private static async Task<int> DeleteUncofirmedAccounts()
-        {
             var userManager = ServiceProvider.GetService<UserManager<ApplicationUser>>();
-            var logger = ServiceProvider.GetService<ILogger<Program>>();
-            var accountSettings = ServiceProvider.GetService<IOptions<AccountSettings>>().Value;
+            var accountLogger = ServiceProvider.GetService<ILogger<AccountWorker>>();
+            var emailLogger = ServiceProvider.GetService<ILogger<EmailWorker>>();
+            var accountSettings = ServiceProvider.GetService<IOptions<AccountSettings>>();
+            var emailSettings = ServiceProvider.GetService<IOptions<EmailSettings>>();
+            var dateTimeProvider = ServiceProvider.GetService<IDateTimeProvider>();
+            var emailRepository = ServiceProvider.GetService<IEmailRepository>();
 
-            var deleteBefore = DateTime.UtcNow - TimeSpan.FromDays(accountSettings.ExpirationDays);
-
-            var usersToDelete = userManager.Users.Where(u => !u.EmailConfirmed && u.JoinDate < deleteBefore);
-            await usersToDelete.ForEachAsync(async u =>
+            var workers = new ITaskWorker[]
             {
-                logger.LogInformation($"Deleting account with email '{u.Email}'.");
-                await userManager.DeleteAsync(u);
-            });
-            return usersToDelete.Count();
+                new EmailWorker(emailRepository, dateTimeProvider, emailLogger, emailSettings),
+                new AccountWorker(userManager, accountLogger, accountSettings, dateTimeProvider)
+            };
+            var tasks = workers.Select(x => x.Run(CancellationToken.None));
+
+            await Task.WhenAll(tasks);
         }
     }
 }
